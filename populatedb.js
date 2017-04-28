@@ -113,7 +113,7 @@
 
 
     function createGenreAuthors(cb) {
-        async.parallel([
+        async.series([
                 function(callback) {
                     authorCreate('Patrick', 'Rothfuss', '1973-06-06', false, callback);
                 },
