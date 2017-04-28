@@ -4,12 +4,18 @@ block content
   h1= title
 
   ul
-  each bookinstance in bookinstance_list
-    li #{bookinstance.imprint}
-    li #{bookinstance.status}
-    li
-      a(href=bookinstance.book.url) #{bookinstance.book.title}
-      | (#{bookinstance.book.author.name})
-    li #{bookinstance.due_back}
+  each val in bookinstance_list
+    li 
+      a(href=val.url) #{val.book.title} : #{val.imprint} 
+      | (#{val.book.author.name}) - 
+      if val.status=='Available'
+        span.text-success #{val.status}
+      else if val.status=='Maintenance'
+        span.text-danger #{val.status}
+      else
+        span.text-warning #{val.status} 
+      if val.status!='Available'
+        span  (Due: #{val.due_back} )
+        
   else
-    li There are no books.
+    li There are no book copies in this library.
