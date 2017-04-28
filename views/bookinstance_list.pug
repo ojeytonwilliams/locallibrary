@@ -1,0 +1,15 @@
+extends layout
+
+block content
+  h1= title
+
+  ul
+  each bookinstance in bookinstance_list
+    li #{bookinstance.imprint}
+    li #{bookinstance.status}
+    li
+      a(href=bookinstance.book.url) #{bookinstance.book.title}
+      | (#{bookinstance.book.author.name})
+    li #{bookinstance.due_back}
+  else
+    li There are no books.
