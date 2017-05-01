@@ -60,9 +60,9 @@ exports.author_create_get = function(req, res, next) {
 // Handle Author create on POST
 exports.author_create_post = function(req, res, next) {
 
-  // NOTE: It's important that the sanitation comes first, since the aim is to
+  // NOTE: It's important that the sanitization comes first, since the aim is to
   // pass valid, sanitized data to the database.  Since data must be sanitized
-  // and sanitation can render data invalid, we must sanitize first.
+  // and sanitization can render data invalid, we must sanitize first.
 
   req.sanitize('first_name').escape();
   req.sanitize('family_name').escape();
