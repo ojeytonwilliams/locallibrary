@@ -101,13 +101,35 @@ exports.author_create_post = function(req, res, next) {
   } else {
     // Data from form is valid
 
-    author.save(function(err) {
-      if (err) {
-        return next(err);
-      }
-      //successful - redirect to new author record.
-      res.redirect(author.url);
-    });
+    // Data from form is valid.
+    // Check if Author with same name and date of birth already exists
+    Author.findOne({
+        'first_name': req.body.first_name,
+        'last_name' : req.body.last_name,
+        'date_of_birth': req.body.date_of_birth
+      })
+      .exec(function(err, found_author) {
+        console.log('found_author: ' + found_author);
+        if (err) {
+          return next(err);
+        }
+
+        if (found_author) {
+          //Author exists, redirect to their detail page
+          res.redirect(found_author.url);
+        } else {
+
+          author.save(function(err) {
+            if (err) {
+              return next(err);
+            }
+            //Author saved. Redirect to author detail page
+            res.redirect(author.url);
+          });
+
+        }
+
+      });
   }
 
 };

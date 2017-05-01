@@ -71,8 +71,6 @@ exports.genre_create_post = function(req, res, next) {
   //Check that the name field is not empty
   req.checkBody('name', 'Genre name required').notEmpty();
 
-
-
   //Run the validators
   var errors = req.validationErrors();
 
