@@ -41,11 +41,15 @@ exports.author_detail = function(req, res, next) {
       return next(err);
     }
     //Successful, so render
-    res.render('author_detail', {
-      title: 'Author Detail',
-      author: results.author,
-      author_books: results.authors_books
-    });
+    if (results.author) {
+      res.render('author_detail', {
+        title: 'Author Detail',
+        author: results.author,
+        author_books: results.authors_books
+      });
+    } else {
+      res.redirect('/catalog/authors')
+    }
   });
 };
 
@@ -105,7 +109,7 @@ exports.author_create_post = function(req, res, next) {
     // Check if Author with same name and date of birth already exists
     Author.findOne({
         'first_name': req.body.first_name,
-        'last_name' : req.body.last_name,
+        'last_name': req.body.last_name,
         'date_of_birth': req.body.date_of_birth
       })
       .exec(function(err, found_author) {
@@ -136,12 +140,81 @@ exports.author_create_post = function(req, res, next) {
 
 // Display Author delete form on GET
 exports.author_delete_get = function(req, res, next) {
-  res.send('NOT IMPLEMENTED: Author delete GET');
+  console.log("author_delete_get");
+  async.parallel({
+    author: function(callback) {
+      Author.findById(req.params.id).exec(callback);
+    },
+    authors_books: function(callback) {
+      Book.find({
+        'author': req.params.id
+      }).exec(callback);
+    },
+  }, function(err, results) {
+    if (err) {
+      return next(err);
+    }
+
+    if (results.author) {
+      //Successful, so render
+      res.render('author_delete', {
+        title: 'Delete Author',
+        author: results.author,
+        author_books: results.authors_books
+      });
+    } else {
+      console.log("Invalid delete get request, redirecting to authors");
+      res.redirect('/catalog/authors')
+    }
+  });
+
 };
 
 // Handle Author delete on POST
 exports.author_delete_post = function(req, res, next) {
-  res.send('NOT IMPLEMENTED: Author delete POST');
+  console.log("author_delete_post");
+  req.checkBody('authorid', 'Author id must exist').notEmpty();
+  var errors = req.validationErrors();
+  if (errors) {
+    console.log("Invalid delete post request, redirecting to authors");
+    res.redirect('/catalog/authors')
+  } else {
+    async.parallel({
+      author: function(callback) {
+        Author.findById(req.body.authorid).exec(callback);
+      },
+      authors_books: function(callback) {
+        Book.find({
+          'author': req.body.authorid
+        }, 'title summary').exec(callback);
+      },
+    }, function(err, results) {
+      if (err) {
+        console.log(err);
+        return next(err);
+      }
+      //Success
+      if (results.authors_books > 0) {
+        //Author has books. Render in same way as for GET route.
+        res.render('author_delete', {
+          title: 'Delete Author',
+          author: results.author,
+          author_books: results.authors_books
+        });
+        return;
+      } else {
+        //Author has no books. Delete object and redirect to the list of authors.
+        Author.findByIdAndRemove(req.body.authorid, function deleteAuthor(err) {
+          if (err) {
+            return next(err);
+          }
+          //Success - got to author list
+          res.redirect('/catalog/authors');
+        });
+
+      }
+    });
+  }
 };
 
 // Display Author update form on GET
