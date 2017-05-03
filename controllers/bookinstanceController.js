@@ -178,6 +178,10 @@ exports.bookinstance_delete_post = function(req, res, next) {
         //Success - go to book list
         console.log("Sucessfully deleted bookinstance");
         res.redirect(303, '/catalog/bookinstances');
+        // TODO: When the user is deleting book instances in order to delete a
+        // book, it would be nice if they could delete all instances at once
+        // and, if they want to delete them one-by-one they should be sent back
+        // to the book page each time.
       });
     });
   }
