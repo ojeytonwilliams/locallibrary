@@ -54,7 +54,7 @@ exports.book_list = function(req, res, next) {
 
 // Display detail page for a specific book
 exports.book_detail = function(req, res, next) {
-
+  console.log("book_detail");
   async.parallel({
     book: function(callback) {
 
@@ -75,12 +75,18 @@ exports.book_detail = function(req, res, next) {
     if (err) {
       return next(err);
     }
+
+    if (results.book){
     //Successful, so render
     res.render('book_detail', {
       title: 'Title',
       book: results.book,
       book_instances: results.book_instance
     });
+  } else {
+    // No such book, going back to catalog
+    res.redirect(303, '/catalog/books')
+  }
   });
 
 };
@@ -190,15 +196,65 @@ exports.book_create_post = function(req, res, next) {
 
 };
 
-// Display book delete form on GET
+// Display Book delete form on GET
 exports.book_delete_get = function(req, res, next) {
-  res.send('NOT IMPLEMENTED: Book delete GET');
+  async.parallel({
+    book: function(callback) {
+      Book.findById(req.params.id).exec(callback);
+    },
+  }, function(err, results) {
+    if (err) {
+      return next(err);
+    }
+
+    if (results.book) {
+      //Successful, so render
+      res.render('book_delete', {
+        title: 'Delete Book',
+        book: results.book,
+      });
+    } else {
+      console.log("Invalid delete get request, redirecting to root");
+
+      res.redirect(303, '/')
+    }
+  });
+
 };
 
-// Handle book delete on POST
+// Handle Book delete on POST
 exports.book_delete_post = function(req, res, next) {
-  res.send('NOT IMPLEMENTED: Book delete POST');
+  console.log("book_delete_post");
+  req.checkBody('bookid', 'Book id must exist').notEmpty();
+  var errors = req.validationErrors();
+  if (errors) {
+    console.log("Invalid delete post request, redirecting to books");
+    res.redirect(303, '/catalog/books')
+  } else {
+    async.parallel({
+      book: function(callback) {
+        Book.findById(req.body.bookid).exec(callback);
+      },
+    }, function(err, results) {
+      if (err) {
+        console.log(err);
+        return next(err);
+      }
+
+      //Delete object and redirect to the list of books.
+      Book.findByIdAndRemove(req.body.bookid, function deleteBook(err) {
+        if (err) {
+          return next(err);
+        }
+        //Success - go to book list
+        console.log("Sucessfully deleted book");
+        res.redirect(303, '/catalog/books');
+      });
+
+    });
+  }
 };
+
 
 // Display book update form on GET
 exports.book_update_get = function(req, res, next) {

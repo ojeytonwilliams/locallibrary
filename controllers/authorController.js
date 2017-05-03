@@ -48,7 +48,7 @@ exports.author_detail = function(req, res, next) {
         author_books: results.authors_books
       });
     } else {
-      res.redirect('/catalog/authors')
+      res.redirect(303, '/catalog/authors');
     }
   });
 };
@@ -120,7 +120,7 @@ exports.author_create_post = function(req, res, next) {
 
         if (found_author) {
           //Author exists, redirect to their detail page
-          res.redirect(found_author.url);
+          res.redirect(303, found_author.url);
         } else {
 
           author.save(function(err) {
@@ -128,7 +128,7 @@ exports.author_create_post = function(req, res, next) {
               return next(err);
             }
             //Author saved. Redirect to author detail page
-            res.redirect(author.url);
+            res.redirect(303, author.url);
           });
 
         }
@@ -140,7 +140,6 @@ exports.author_create_post = function(req, res, next) {
 
 // Display Author delete form on GET
 exports.author_delete_get = function(req, res, next) {
-  console.log("author_delete_get");
   async.parallel({
     author: function(callback) {
       Author.findById(req.params.id).exec(callback);
@@ -164,7 +163,8 @@ exports.author_delete_get = function(req, res, next) {
       });
     } else {
       console.log("Invalid delete get request, redirecting to authors");
-      res.redirect('/catalog/authors')
+
+      res.redirect(303,'/catalog/authors')
     }
   });
 
@@ -177,7 +177,7 @@ exports.author_delete_post = function(req, res, next) {
   var errors = req.validationErrors();
   if (errors) {
     console.log("Invalid delete post request, redirecting to authors");
-    res.redirect('/catalog/authors')
+    res.redirect(303, '/catalog/authors')
   } else {
     async.parallel({
       author: function(callback) {
@@ -209,7 +209,8 @@ exports.author_delete_post = function(req, res, next) {
             return next(err);
           }
           //Success - got to author list
-          res.redirect('/catalog/authors');
+          console.log("Sucessfully deleted author");
+          res.redirect(303, '/catalog/authors');
         });
 
       }

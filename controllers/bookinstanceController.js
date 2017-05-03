@@ -31,16 +31,23 @@ exports.bookinstance_detail = function(req, res, next) {
 
   BookInstance.findById(req.params.id)
     .populate('book')
-    .exec(function(err, bookinstance) {
+    .exec(function(err, instance) {
       if (err) {
         return next(err);
       }
-      //Successful, so render
-      res.render('bookinstance_detail', {
-        title: 'Book:',
-        bookinstance: bookinstance
-      });
+      if (instance) {
+        //Successful, so render
+        res.render('bookinstance_detail', {
+          title: 'Book:',
+          bookinstance: instance
+        });
+      } else {
+        // TODO: Alert the user that this instance doesn't exist, log it so
+        // that we can see if users are often being directed to missing pages.
+        res.redirect(303, '/catalog/bookinstances')
+      }
     });
+
 
 };
 
@@ -77,7 +84,7 @@ exports.bookinstance_create_post = function(req, res, next) {
   req.checkBody('imprint', 'Imprint must be specified').notEmpty();
   req.checkBody('due_back', 'Invalid date').optional({
     checkFalsy: true
-  }).isISO8601();  // isDate no longer appears in validator, so rather than
+  }).isISO8601(); // isDate no longer appears in validator, so rather than
   // tying this to a legacy version, I've switched to this.
 
 
@@ -123,14 +130,57 @@ exports.bookinstance_create_post = function(req, res, next) {
 
 };
 
+
+
 // Display BookInstance delete form on GET
 exports.bookinstance_delete_get = function(req, res, next) {
-  res.send('NOT IMPLEMENTED: BookInstance delete GET');
+
+  BookInstance.findById(req.params.id, function(err, bookinstance) {
+    if (err) {
+      return next(err);
+    }
+    if (bookinstance) {
+      //Successful, so render
+      res.render('bookinstance_delete', {
+        title: 'Delete Copy of Book',
+        bookinstance: bookinstance,
+      });
+    } else {
+      console.log("Invalid delete BookInstance get request, redirecting to root");
+
+      res.redirect(303, '/')
+    }
+  });
+
 };
 
 // Handle BookInstance delete on POST
 exports.bookinstance_delete_post = function(req, res, next) {
-  res.send('NOT IMPLEMENTED: BookInstance delete POST');
+  console.log("bookinstance_delete_post");
+  req.checkBody('bookinstanceid', 'Book id must exist').notEmpty();
+  var errors = req.validationErrors();
+  if (errors) {
+    console.log("Invalid delete BookInstance post request, redirecting to bookinstances");
+    res.redirect(303, '/catalog/bookinstances')
+  } else {
+
+    BookInstance.findById(req.body.bookinstanceid, function(err, results) {
+      if (err) {
+        console.log(err);
+        return next(err);
+      }
+
+      //Delete object and redirect to the list of books.
+      BookInstance.findByIdAndRemove(results.id, function deleteBook(err) {
+        if (err) {
+          return next(err);
+        }
+        //Success - go to book list
+        console.log("Sucessfully deleted bookinstance");
+        res.redirect(303, '/catalog/bookinstances');
+      });
+    });
+  }
 };
 
 // Display BookInstance update form on GET
