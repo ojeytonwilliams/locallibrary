@@ -1,6 +1,8 @@
 var mongoose = require('mongoose');
 var moment = require('moment');
 var formatDate = require('../utils/utils').formatDate;
+var formatDateInput = require('../utils/utils').formatDateInput;
+var debug = require('debug')('app:author');
 
 var Schema = mongoose.Schema;
 
@@ -48,6 +50,18 @@ AuthorSchema
   .get(function() {
     return formatDate(this.date_of_death)
   });
+
+AuthorSchema
+.virtual('date_of_death_input')
+.get(function () {
+  return formatDateInput(this.date_of_death)
+})
+
+AuthorSchema
+.virtual('date_of_birth_input')
+.get(function () {
+  return formatDateInput(this.date_of_birth)
+})
 
 AuthorSchema
   .virtual('lifespan')

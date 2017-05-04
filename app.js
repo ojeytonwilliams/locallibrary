@@ -5,12 +5,18 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var expressValidator = require('express-validator');
+var validator = require('validator');
+var compression = require('compression');
+var helmet = require('helmet');
 
 var index = require('./routes/index');
 var users = require('./routes/users');
 var catalog = require('./routes/catalog');
 
 var app = express();
+
+app.use(helmet());
+app.use(compression()); //Compress all routes
 
 //Set up mongoose connection
 var mongoose = require('mongoose');
@@ -29,7 +35,15 @@ app.set('view engine', 'pug');
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(expressValidator());
+//app.use(expressValidator());
+app.use(expressValidator({
+ customSanitizers: {
+    toISO8601: function(date) {
+        var newDate = validator.toDate(date).toISOString();
+        return newDate;
+    },
+ }
+}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 

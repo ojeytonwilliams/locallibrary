@@ -1,6 +1,7 @@
 var Genre = require('../models/genre');
 var Book = require('../models/book');
 var async = require('async');
+var debug = require('debug')('app:genreController');
 
 // Display list of all Genre
 exports.genre_list = function(req, res, next) {
@@ -101,7 +102,7 @@ exports.genre_create_post = function(req, res, next) {
         'name': req.body.name
       })
       .exec(function(err, found_genre) {
-        console.log('found_genre: ' + found_genre);
+        debug('found_genre: ' + found_genre);
         if (err) {
           return next(err);
         }
@@ -150,7 +151,7 @@ exports.genre_delete_get = function(req, res, next) {
         genres_books: results.genres_books
       });
     } else {
-      console.log("Invalid delete Genre get request, redirecting to genres");
+      debug("Invalid delete Genre get request, redirecting to genres");
 
       res.redirect(303, '/catalog/genres')
     }
@@ -160,11 +161,11 @@ exports.genre_delete_get = function(req, res, next) {
 
 // Handle Genre delete on POST
 exports.genre_delete_post = function(req, res, next) {
-  console.log("genre_delete_post");
+  debug("genre_delete_post");
   req.checkBody('genreid', 'Genre id must exist').notEmpty();
   var errors = req.validationErrors();
   if (errors) {
-    console.log("Invalid delete Genre post request, redirecting to genres");
+    debug("Invalid delete Genre post request, redirecting to genres");
     res.redirect(303, '/catalog/genres')
   } else {
     async.parallel({
@@ -178,7 +179,7 @@ exports.genre_delete_post = function(req, res, next) {
       },
     }, function(err, results) {
       if (err) {
-        console.log(err);
+        debug(err);
         return next(err);
       }
       //Success
@@ -197,7 +198,7 @@ exports.genre_delete_post = function(req, res, next) {
             return next(err);
           }
           //Success - got to genre list
-          console.log("Sucessfully deleted genre");
+          debug("Sucessfully deleted genre");
           res.redirect(303, '/catalog/genres');
         });
 

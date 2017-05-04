@@ -2,11 +2,12 @@ var Book = require('../models/book');
 var Author = require('../models/author');
 var Genre = require('../models/genre');
 var BookInstance = require('../models/bookinstance');
+var debug = require('debug')('app:bookController');
 
 var async = require('async');
 
 exports.index = function(req, res) {
-  console.log("Starting book index");
+  debug("Starting book index");
   async.parallel({
     book_count: function(callback) {
       Book.count(callback);
@@ -26,7 +27,7 @@ exports.index = function(req, res) {
       Genre.count(callback);
     },
   }, function(err, results) {
-    if (err) console.log(err);
+    if (err) debug(err);
     res.render('index', {
       title: 'Local Library Home',
       error: err,
@@ -54,7 +55,7 @@ exports.book_list = function(req, res, next) {
 
 // Display detail page for a specific book
 exports.book_detail = function(req, res, next) {
-  console.log("book_detail");
+  debug("book_detail");
   async.parallel({
     book: function(callback) {
 
@@ -144,7 +145,7 @@ exports.book_create_post = function(req, res, next) {
     genre: (typeof req.body.genre === 'undefined') ? [] : req.body.genre.split(",")
   });
 
-  console.log('BOOK: ' + book);
+  debug('BOOK: ' + book);
 
   var errors = req.validationErrors();
   if (errors) {
@@ -223,7 +224,7 @@ exports.book_delete_get = function(req, res, next) {
         book_instances: results.book_instances
       });
     } else {
-      console.log("Invalid delete get request, redirecting to root");
+      debug("Invalid delete get request, redirecting to root");
 
       res.redirect(303, '/')
     }
@@ -233,11 +234,11 @@ exports.book_delete_get = function(req, res, next) {
 
 // Handle Book delete on POST
 exports.book_delete_post = function(req, res, next) {
-  console.log("book_delete_post");
+  debug("book_delete_post");
   req.checkBody('bookid', 'Book id must exist').notEmpty();
   var errors = req.validationErrors();
   if (errors) {
-    console.log("Invalid delete post request, redirecting to books");
+    debug("Invalid delete post request, redirecting to books");
     res.redirect(303, '/catalog/books')
   } else {
     async.parallel({
@@ -246,7 +247,7 @@ exports.book_delete_post = function(req, res, next) {
       },
     }, function(err, results) {
       if (err) {
-        console.log(err);
+        debug(err);
         return next(err);
       }
 
@@ -256,7 +257,7 @@ exports.book_delete_post = function(req, res, next) {
           return next(err);
         }
         //Success - go to book list
-        console.log("Sucessfully deleted book");
+        debug("Sucessfully deleted book");
         res.redirect(303, '/catalog/books');
       });
 
@@ -315,12 +316,6 @@ exports.book_update_get = function(req, res, next) {
 // Handle book update on POST
 exports.book_update_post = function(req, res, next) {
 
-  //Validate
-  req.checkBody('title', 'Title must not be empty.').notEmpty();
-  req.checkBody('author', 'Author must not be empty').notEmpty();
-  req.checkBody('summary', 'Summary must not be empty').notEmpty();
-  req.checkBody('isbn', 'ISBN must not be empty').notEmpty();
-
   //Sanitize id passed in.
   req.sanitize('id').escape();
   req.sanitize('id').trim();
@@ -335,6 +330,13 @@ exports.book_update_post = function(req, res, next) {
   req.sanitize('summary').trim();
   req.sanitize('isbn').trim();
   req.sanitize('genre').escape();
+
+  //Validate
+  req.checkBody('title', 'Title must not be empty.').notEmpty();
+  req.checkBody('author', 'Author must not be empty').notEmpty();
+  req.checkBody('summary', 'Summary must not be empty').notEmpty();
+  req.checkBody('isbn', 'ISBN must not be empty').notEmpty();
+
 
   var book = new Book({
     title: req.body.title,

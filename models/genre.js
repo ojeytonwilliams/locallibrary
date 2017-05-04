@@ -1,4 +1,5 @@
 var mongoose = require('mongoose');
+var debug = require('debug')('app:genre');
 
 var Schema = mongoose.Schema;
 

@@ -1,6 +1,7 @@
 var BookInstance = require('../models/bookinstance');
 var Book = require('../models/book');
-
+var async = require('async');
+var debug = require('debug')('app:bookinstanceController');
 
 // Display list of all BookInstances
 exports.bookinstance_list = function(req, res, next) {
@@ -96,7 +97,7 @@ exports.bookinstance_create_post = function(req, res, next) {
     due_back: req.body.due_back
   });
 
-  console.log("BookInstance: " + bookinstance);
+  debug("BookInstance: " + bookinstance);
 
   var errors = req.validationErrors();
   if (errors) {
@@ -146,7 +147,7 @@ exports.bookinstance_delete_get = function(req, res, next) {
         bookinstance: bookinstance,
       });
     } else {
-      console.log("Invalid delete BookInstance get request, redirecting to root");
+      debug("Invalid delete BookInstance get request, redirecting to root");
 
       res.redirect(303, '/')
     }
@@ -156,17 +157,17 @@ exports.bookinstance_delete_get = function(req, res, next) {
 
 // Handle BookInstance delete on POST
 exports.bookinstance_delete_post = function(req, res, next) {
-  console.log("bookinstance_delete_post");
+  debug("bookinstance_delete_post");
   req.checkBody('bookinstanceid', 'Book id must exist').notEmpty();
   var errors = req.validationErrors();
   if (errors) {
-    console.log("Invalid delete BookInstance post request, redirecting to bookinstances");
+    debug("Invalid delete BookInstance post request, redirecting to bookinstances");
     res.redirect(303, '/catalog/bookinstances')
   } else {
 
     BookInstance.findById(req.body.bookinstanceid, function(err, results) {
       if (err) {
-        console.log(err);
+        debug(err);
         return next(err);
       }
 
@@ -176,7 +177,7 @@ exports.bookinstance_delete_post = function(req, res, next) {
           return next(err);
         }
         //Success - go to book list
-        console.log("Sucessfully deleted bookinstance");
+        debug("Sucessfully deleted bookinstance");
         res.redirect(303, '/catalog/bookinstances');
         // TODO: When the user is deleting book instances in order to delete a
         // book, it would be nice if they could delete all instances at once
@@ -189,10 +190,100 @@ exports.bookinstance_delete_post = function(req, res, next) {
 
 // Display BookInstance update form on GET
 exports.bookinstance_update_get = function(req, res, next) {
-  res.send('NOT IMPLEMENTED: BookInstance update GET');
+
+  req.sanitize('id').escape();
+  req.sanitize('id').trim();
+
+  async.parallel({
+    books: function(callback) {
+      Book.find({}, 'title', callback);
+    },
+    bookinstance: function (callback) {
+      BookInstance.findById(req.params.id, callback)
+    },
+  }, function(err, results) {
+    if (err) {
+      return next(err);
+    }
+
+    if (results.bookinstance) {
+
+      //Successful, so render
+      res.render('bookinstance_form', {
+        title: 'Update BookInstance',
+        book_list: results.books,
+        bookinstance: results.bookinstance,
+        statuses: BookInstance.schema.path('status').enumValues
+      });
+    } else {
+      res.redirect(303, '/')
+    }
+  });
 };
 
-// Handle bookinstance update on POST
+// Handle BookInstance update on POST
 exports.bookinstance_update_post = function(req, res, next) {
-  res.send('NOT IMPLEMENTED: BookInstance update POST');
+
+  req.sanitize('book').escape();
+  req.sanitize('imprint').escape();
+  req.sanitize('status').escape();
+  req.sanitize('book').trim();
+  req.sanitize('imprint').trim();
+  req.sanitize('status').trim();
+  req.sanitize('due_back').toISO8601();
+
+  debug("Checking due_back: " + req.body.due_back);
+  debug("Checking due_back: " + typeof req.body.due_back);
+  req.checkBody('book', 'Book must be specified').notEmpty(); //We won't force Alphanumeric, because book titles might have spaces.
+  req.checkBody('imprint', 'Imprint must be specified').notEmpty();
+  req.checkBody('due_back', 'Invalid date').optional({
+    checkFalsy: true
+  }).isISO8601(); // isDate no longer appears in validator, so rather than
+  // tying this to a legacy version, I've switched to this.
+
+  //Sanitize id passed in.
+  req.sanitize('id').escape();
+  req.sanitize('id').trim();
+
+
+  var errors = req.validationErrors();
+
+  var bookinstance = new BookInstance({
+    book: req.body.book,
+    imprint: req.body.imprint,
+    status: req.body.status,
+    due_back: req.body.due_back
+  });
+
+  debug("bookinstance: " + bookinstance);
+  debug("errors: " + JSON.stringify(errors));
+  if (errors) {
+
+    Book.find({}, 'title')
+      .exec(function(err, books) {
+        if (err) {
+          return next(err);
+        }
+        //Successful, so render
+        res.render('bookinstance_form', {
+          title: 'Update BookInstance',
+          book_list: books,
+          selected_book: bookinstance.book._id,
+          errors: errors,
+          bookinstance: bookinstance,
+          statuses: bookinstance.schema.path('status').enumValues
+        });
+      });
+    return;
+  } else {
+    // Data from form is valid
+    bookinstance.save(function(err) {
+      if (err) {
+        return next(err);
+      }
+      //successful - redirect to new book-instance record.
+      res.redirect(bookinstance.url);
+    });
+  }
+
 };
